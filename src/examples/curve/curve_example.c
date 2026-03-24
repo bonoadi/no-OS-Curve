@@ -135,153 +135,152 @@ int curve_example(void)
 
  
 
-  
-  /* Intitalize Vb and Vc Drives by 500 / Scale */
+ while(1){ 
+    /* Intitalize Vb and Vc Drives by 500 / Scale */
 
-  dac_value = 500 / (uint16_t) scale;
+    dac_value = 500 / (uint16_t) scale;
 
-  ret = ad5592r_write_dac(ad5592r_dev, 0, dac_value);
-  if (ret) {
-   char msg_err[] = "Failed to write to DAC\n\r";
-   no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
-   goto cleanup;
-  }
-
-
-  ret = ad5592r_write_dac(ad5592r_dev, 2, dac_value);
-  if (ret) {
-   char msg_err[] = "Failed to write to DAC\n\r";
-   no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
-   goto cleanup;
-  }
-
-  
-  /* VB/RAW = CHANNEL 0, VC.RAW = CHANNEL 2*/
-  /* I = FLOAT R = FLOAT V DEPENDS*/
-  float curve_vcs[NUM_CURVES][NUM_POINTS];
-  float curve_ics[NUM_CURVES][NUM_POINTS];
-  int curve_idx = 0;
-  
-  for (uint16_t vb = 512; vb <= 2560; vb = vb + 512){
-
-    /*ITERATION OF MY CALCULATION FOR FORMULA*/
-    // uint32_t vbdrive = vb / (uint32_t)scale;
-    uint32_t vbdrive = vb;
-    // uint32_t vbdrive = (vb * vref_mv) / 4096;
-
-    /*Write Values in the DAC*/
-    ret = ad5592r_write_dac(ad5592r_dev, 0, vbdrive);
+    ret = ad5592r_write_dac(ad5592r_dev, 0, dac_value);
     if (ret) {
-        char msg_err[] = "Failed to write to DAC\n\r";
-        no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
-        goto cleanup;
+    char msg_err[] = "Failed to write to DAC\n\r";
+    no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+    goto cleanup;
     }
+
+
+    ret = ad5592r_write_dac(ad5592r_dev, 2, dac_value);
+    if (ret) {
+    char msg_err[] = "Failed to write to DAC\n\r";
+    no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+    goto cleanup;
+    }
+
     
-    ib = (((float)vbdrive * (float)vref_mv / 4096.0f) - Vbe) / Rbase;
-    char curveBuffer[128];
-    no_os_mdelay(1000);
-    float parsed_ib = ib * 1e6;
-    float parsed_base_drive = ((float)vbdrive * scale) / 4096.0f;
-    sprintf(curveBuffer,"Base Drive: %0.4f Volts | %0.4f uA | vref: %d \n\r ", parsed_base_drive, parsed_ib, vref_mv);
-    int curvelen = strlen(curveBuffer);
-    no_os_uart_write(uart_desc, curveBuffer, curvelen);
-
-    int point_idx = 0;
-
-    for(uint16_t vcv = 0; vcv < 4096; vcv = vcv + 82){
-
-        uint32_t Vcsense_raw;
-        uint32_t Vcdrive_meas_raw;
+    /* VB/RAW = CHANNEL 0, VC.RAW = CHANNEL 2*/
+    /* I = FLOAT R = FLOAT V DEPENDS*/
+    float curve_vcs[NUM_CURVES][NUM_POINTS];
+    float curve_ics[NUM_CURVES][NUM_POINTS];
+    int curve_idx = 0;
+    
+    for (uint16_t vb = 812; vb < 4096; vb = vb + 812){
 
         /*ITERATION OF MY CALCULATION FOR FORMULA*/
-        // uint32_t vcdrive = vcv / (uint32_t)scale;
-        uint32_t vcdrive = vcv;
-        // uint32_t vcdrive = (vcv * vref_mv) / 4096;
+        // uint32_t vbdrive = vb / (uint32_t)scale;
+        uint32_t vbdrive = vb;
+        // uint32_t vbdrive = (vb * vref_mv) / 4096;
 
-        ret = ad5592r_write_dac(ad5592r_dev, 2, vcdrive);
+        /*Write Values in the DAC*/
+        ret = ad5592r_write_dac(ad5592r_dev, 0, vbdrive);
         if (ret) {
             char msg_err[] = "Failed to write to DAC\n\r";
             no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
             goto cleanup;
         }
-
-
-        ret = ad5592r_read_adc(ad5592r_dev, 1, &Vcsense_raw);
-        if (ret) {
-        char msg_err[] = "Failed to read from ADC\n\r";
-        no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
-        goto cleanup;
-        }
-
-        ret = ad5592r_read_adc(ad5592r_dev, 2, &Vcdrive_meas_raw);
-        if (ret) {
-        char msg_err[] = "Failed to read from ADC\n\r";
-        no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
-        goto cleanup;
-        }
-        /*Pad the value*/
-        Vcsense = ((Vcsense_raw & 0x0FFF) * (float)vref_mv) / 4096.0f;
-        // Vcdrive_meas = Vcdrive_meas_raw & 0x0FFF;
-        Vcdrive_meas = ((Vcdrive_meas_raw & 0x0FFF) * (float)vref_mv) / 4096.0f;
-
         
-        ic = (((float)Vcdrive_meas - (float)Vcsense) * scale / Rsense);
-        vc = ((float)Vcsense * scale) / 2048.0f;
+        ib = ((((float)vbdrive * vref_mv / 1000) - Vbe) / Rbase);
+        char curveBuffer[128];
+        no_os_mdelay(1000);
+        float parsed_ib = ib * 1e6;
+        float parsed_base_drive = ((float)vbdrive * scale) / 4096.0f;
+        sprintf(curveBuffer,"Base Drive: %0.4f Volts | %0.4f uA | vref: %d \n\r ", parsed_base_drive, parsed_ib, vref_mv);
+        int curvelen = strlen(curveBuffer);
+        no_os_uart_write(uart_desc, curveBuffer, curvelen);
 
-        curve_vcs[curve_idx][point_idx] = vc;
-        curve_ics[curve_idx][point_idx] = ic;
-        char curveBuffer2[128];
-        no_os_mdelay(100);
-        sprintf(curveBuffer2,"coll voltage: %f, coll curre: %f\n\r", vc , ic);
-        int curvelen2 = strlen(curveBuffer2);
-        no_os_uart_write(uart_desc, curveBuffer2, curvelen2);
+        int point_idx = 0;
 
-        point_idx++;
+        for(uint16_t vcv = 0; vcv < 4096; vcv = vcv + 82){
 
-        }
+            uint32_t Vcsense_raw;
+            uint32_t Vcdrive_meas_raw;
 
-    curve_idx++;
+            /*ITERATION OF MY CALCULATION FOR FORMULA*/
+            // uint32_t vcdrive = vcv / (uint32_t)scale;
+            uint32_t vcdrive = vcv;
+            // uint32_t vcdrive = (vcv * vref_mv) / 4096;
 
-  }
+            ret = ad5592r_write_dac(ad5592r_dev, 2, vcdrive);
+            if (ret) {
+                char msg_err[] = "Failed to write to DAC\n\r";
+                no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+                goto cleanup;
+            }
 
-  /* CSV PORTION OF THE CODE
-     USES STANDARD I/O LIBRARY
-  */
 
-  FILE *fp = fopen("curve_tracer_data.csv", "w");
-  if (fp == NULL){
-    return 1;
-  }
+            ret = ad5592r_read_adc(ad5592r_dev, 1, &Vcsense_raw);
+            if (ret) {
+            char msg_err[] = "Failed to read from ADC\n\r";
+            no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+            goto cleanup;
+            }
 
-  for (int c = 0; c < NUM_CURVES; c++){
-    no_os_mdelay(100);
-    fprintf(fp, "Vce%d,Ic%d", c + 1, c + 1);
-    if (c < NUM_CURVES - 1){
-        fprintf(fp, ",");
-    } else {
-        fprintf(fp, "\n");
+            ret = ad5592r_read_adc(ad5592r_dev, 2, &Vcdrive_meas_raw);
+            if (ret) {
+            char msg_err[] = "Failed to read from ADC\n\r";
+            no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+            goto cleanup;
+            }
+            /*Pad the value*/
+            Vcsense = Vcsense_raw & 0x0FFF;
+            // Vcdrive_meas = Vcdrive_meas_raw & 0x0FFF;
+            Vcdrive_meas = Vcdrive_meas_raw & 0x0FFF;
+
+            
+            ic = ((((float)Vcdrive_meas - (float)Vcsense) * vref_mv) / Rsense) / 4096.0f;
+            vc = ((float)Vcsense * scale) / 4096.0f;
+
+            curve_vcs[curve_idx][point_idx] = vc;
+            curve_ics[curve_idx][point_idx] = ic;
+            char curveBuffer2[128];
+            no_os_mdelay(100);
+            sprintf(curveBuffer2,"coll voltage: %f, coll curre: %f \n\r", vc , ic);
+            int curvelen2 = strlen(curveBuffer2);
+            no_os_uart_write(uart_desc, curveBuffer2, curvelen2);
+
+            point_idx++;
+
+            }
+
+        curve_idx++;
+
     }
-  }
 
-  for (int p = 0; p < NUM_POINTS; p++) {
-    for(int c  = 0; c < NUM_CURVES; c++){
+    /* CSV PORTION OF THE CODE
+        USES STANDARD I/O LIBRARY
+    */
+
+    FILE *fp = fopen("curve_tracer_data.csv", "w");
+    if (fp == NULL){
+        return 1;
+    }
+
+    for (int c = 0; c < NUM_CURVES; c++){
         no_os_mdelay(100);
-        fprintf(fp, "%.6f, %.6f", curve_vcs[c][p], curve_ics[c][p]);
-
+        fprintf(fp, "Vce%d,Ic%d", c + 1, c + 1);
         if (c < NUM_CURVES - 1){
             fprintf(fp, ",");
+        } else {
+            fprintf(fp, "\n");
         }
     }
-    
-    fprintf(fp, "\n");
-  }
 
-  fclose(fp);
+    for (int p = 0; p < NUM_POINTS; p++) {
+        for(int c  = 0; c < NUM_CURVES; c++){
+            no_os_mdelay(100);
+            fprintf(fp, "%.6f, %.6f", curve_vcs[c][p], curve_ics[c][p]);
 
+            if (c < NUM_CURVES - 1){
+                fprintf(fp, ",");
+            }
+        }
+        
+        fprintf(fp, "\n");
+    }
 
+    fclose(fp);
 
-no_os_mdelay(1000);
- 
+ no_os_mdelay(1000);
+ }
+
 
 cleanup:
  if (ad5592r_dev)
