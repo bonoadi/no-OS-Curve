@@ -74,6 +74,12 @@
 #define NUM_CURVES 5
 #define NUM_POINTS 50
 
+/*ASCII VALUES*/
+
+#define GRAPH_HEIGHT 20
+#define GRAPH_WIDTH  60
+
+
 int curve_example(void)
 {
  struct ad5592r_dev *ad5592r_dev = NULL;
@@ -162,7 +168,7 @@ int curve_example(void)
     float curve_ics[NUM_CURVES][NUM_POINTS];
     int curve_idx = 0;
     
-    for (uint16_t vb = 812; vb < 4096; vb = vb + 812){
+    for (uint16_t vb = 820; vb < 4096; vb = vb + 820){
 
         /*ITERATION OF MY CALCULATION FOR FORMULA*/
         // uint32_t vbdrive = vb / (uint32_t)scale;
@@ -243,40 +249,104 @@ int curve_example(void)
         curve_idx++;
 
     }
+    // ======================
+    /* ASCII ART FUNCTION */
+    // ======================
 
-    /* CSV PORTION OF THE CODE
-        USES STANDARD I/O LIBRARY
-    */
 
-    FILE *fp = fopen("curve_tracer_data.csv", "w");
-    if (fp == NULL){
-        return 1;
-    }
+    char grid[GRAPH_HEIGHT][GRAPH_WIDTH];
+    char ASCII_Buffer[100];
+    
+    int grid_h = GRAPH_HEIGHT + 2;
+    int grid_w = GRAPH_WIDTH + 2;
+    
 
-    for (int c = 0; c < NUM_CURVES; c++){
+    // LOOP FOR BORDERS
+    for (int y = 0; y < GRAPH_HEIGHT + 2; y++){
+        for(int x = 0; x < GRAPH_WIDTH + 2; x++){
+            if (y == 0 || y == GRAPH_WIDTH + 1){
+                grid[y][x] = '-';
+            }
+            if (x == 0 || x == GRAPH_HEIGHT + 1){
+                grid[y][x] = '|';
+            } else {
+                grid[y][x] = ' ';
+            }
         no_os_mdelay(100);
-        fprintf(fp, "Vce%d,Ic%d", c + 1, c + 1);
-        if (c < NUM_CURVES - 1){
-            fprintf(fp, ",");
-        } else {
-            fprintf(fp, "\n");
         }
     }
 
-    for (int p = 0; p < NUM_POINTS; p++) {
-        for(int c  = 0; c < NUM_CURVES; c++){
-            no_os_mdelay(100);
-            fprintf(fp, "%.6f, %.6f", curve_vcs[c][p], curve_ics[c][p]);
+    // CORNERS
+    grid[0][0] = '+';
+    grid[0][GRAPH_WIDTH + 1] = '+';
+    grid[GRAPH_HEIGHT + 1][0] = '+';
+    grid[grid_h][grid_w] = '+';
 
-            if (c < NUM_CURVES - 1){
-                fprintf(fp, ",");
+    float max_v = 0.0f;
+    float max_i = 0.0f;
+
+    // STORE MAX VOLTAGES AND CURRENT
+    for(int c = 0; c < NUM_CURVES; c++){
+        for(int p = 0; p < NUM_POINTS; p++){
+            if (curve_vcs[c][p] > max_v){
+                max_v = curve_vcs[c][p];
+            }
+            if (curve_ics[c][p] > max_i){
+                max_i = curve_ics[c][p];
             }
         }
-        
-        fprintf(fp, "\n");
+    }
+    
+    // CHECK VALUE IF POSITIVE
+    if(max_v < 0.1f){
+        max_v = 1.0f;
+    }
+    if(max_i < 0.1f){
+        max_i = 1.0f;
     }
 
-    fclose(fp);
+    for(int c = 0; c < NUM_CURVES; c++){
+        for(int p = 0; p < NUM_POINTS; p++){
+            float v = curve_vcs[c][p];
+            float i = curve_ics[c][p];
+
+            int x = 1 + (int)((v / max_v) * (GRAPH_WIDTH - 1));
+            int y = 1 + (int)((i / max_i) * (GRAPH_HEIGHT - 1));
+            int invert_y = GRAPH_HEIGHT - y;
+
+            if ((x >= 1 && x <= GRAPH_WIDTH) && (y >= 1 && y <= GRAPH_HEIGHT)){
+                grid[y][x] = '*';
+            }
+        }
+    }
+
+    no_os_mdelay(100);
+    sprintf(ASCII_Buffer, "\r\n == ASCII Curve Tracer ==\r\n");
+    no_os_uart_write(uart_desc, ASCII_Buffer, strlen(ASCII_Buffer));
+    
+
+    // Print GRID
+    for(int y = 0; y < GRAPH_WIDTH; y++){
+        no_os_mdelay(100);
+        no_os_uart_write(uart_desc, (uint8_t*)grid[y], GRAPH_WIDTH + 2);
+        no_os_uart_write(uart_desc, (uint8_t*)"\r\n", 2);
+    }
+
+    no_os_mdelay(100);
+    sprintf(ASCII_Buffer, " 0.0");
+    no_os_uart_write(uart_desc, (uint8_t*)ASCII_Buffer, strlen(ASCII_Buffer));
+
+    float step = max_v / 5.0f;
+    for(int k = 1; k <= 5; k++){
+        no_os_mdelay(100);
+        no_os_uart_write(uart_desc, (uint8_t*)"            ", 9);
+        sprintf(ASCII_Buffer, "%.1f", step * k);
+        no_os_uart_write(uart_desc, (uint8_t*)ASCII_Buffer, strlen(ASCII_Buffer));
+
+    }
+    no_os_mdelay(100);
+    no_os_uart_write(uart_desc, (uint8_t*)"\r\n", 2);
+    
 
  no_os_mdelay(1000);
  }
