@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/PeriphDrivers/Source/SPIXR/spixr_me14.c

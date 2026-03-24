@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/MAXUSB/include/devclass/cdc_acm.h

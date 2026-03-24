@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/MAXUSB/src/enumerate/enumerate.c

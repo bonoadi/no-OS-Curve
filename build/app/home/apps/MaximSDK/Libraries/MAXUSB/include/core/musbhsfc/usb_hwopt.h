@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/MAXUSB/include/core/musbhsfc/usb_hwopt.h

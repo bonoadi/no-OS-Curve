@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32665/Include/mcr_regs.h

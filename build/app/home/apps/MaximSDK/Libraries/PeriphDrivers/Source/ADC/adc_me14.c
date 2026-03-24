@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/PeriphDrivers/Source/ADC/adc_me14.c

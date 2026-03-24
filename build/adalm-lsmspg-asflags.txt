@@ -1,0 +1,3 @@
+-x
+assembler-with-cpp
+-mthumb

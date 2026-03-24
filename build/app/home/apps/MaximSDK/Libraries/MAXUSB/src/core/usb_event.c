@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/MAXUSB/src/core/usb_event.c

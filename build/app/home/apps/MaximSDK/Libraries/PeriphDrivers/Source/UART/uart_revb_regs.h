@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/PeriphDrivers/Source/UART/uart_revb_regs.h

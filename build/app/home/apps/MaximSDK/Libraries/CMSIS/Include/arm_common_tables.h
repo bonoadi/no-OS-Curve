@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/CMSIS/Include/arm_common_tables.h

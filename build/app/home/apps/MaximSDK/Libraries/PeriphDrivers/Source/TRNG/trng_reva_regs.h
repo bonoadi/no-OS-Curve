@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/PeriphDrivers/Source/TRNG/trng_reva_regs.h

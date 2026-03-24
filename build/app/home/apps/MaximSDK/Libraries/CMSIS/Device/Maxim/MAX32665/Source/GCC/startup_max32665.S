@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32665/Source/GCC/startup_max32665.S

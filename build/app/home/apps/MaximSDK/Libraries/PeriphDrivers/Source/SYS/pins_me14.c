@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/PeriphDrivers/Source/SYS/pins_me14.c

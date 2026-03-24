@@ -1,0 +1,1 @@
+/home/apps/MaximSDK/Libraries/CMSIS/Device/Maxim/MAX32665/Source/system_max32665.c
