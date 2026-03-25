@@ -1,6 +1,6 @@
 /***************************************************************************//**
  *   @file   curve_example.c
- *   @brief  Curve tracer example for AD5592R.
+ *   @brief  Curve tracer example for AD5593R.
  *   @author 
 ********************************************************************************
  * Copyright 2026(c) Analog Devices, Inc.
@@ -36,21 +36,25 @@
 #include "no_os_print_log.h"
 #include "no_os_uart.h"
 #include "ad5592r.h"
+#include "ad5593r.h"
+#include "ad5592r-base.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
-#define DEFINE_AD5592R_IP() { \
+
+
+#define DEFINE_AD5593R_IP() { \
  .int_ref = true, \
- .spi_init = &ad5592r_spi_ip, \
- .i2c_init = NULL, \
- .ss_init = &ad5592r_spi_ss_ip, \
+ .spi_init = NULL, \
+ .i2c_init = &ad5593r_i2c_ip, \
+ .ss_init = &ad5593r_ip_ss_ip, \
  .channel_modes = { \
   CH_MODE_DAC, /* channel 0 */ \
   CH_MODE_ADC, /* channel 1 */ \
   CH_MODE_DAC_AND_ADC, /* channel 2 */ \
-  CH_MODE_UNUSED, /* channel 3 */ \
+  CH_MODE_DAC_AND_ADC, /* channel 3 */ \
   CH_MODE_UNUSED, /* channel 4 */ \
   CH_MODE_UNUSED, /* channel 5 */ \
   CH_MODE_UNUSED, /* channel 6 */ \
@@ -83,6 +87,7 @@
 int curve_example(void)
 {
  struct ad5592r_dev *ad5592r_dev = NULL;
+ struct ad5593r_dev *ad5593r_dev = NULL;
  struct no_os_uart_desc *uart_desc = NULL;
  uint16_t dac_value; // Mid-scale value
  float vc;
@@ -91,7 +96,7 @@ int curve_example(void)
  uint32_t vref_mv;
  int ret;
 
- /*   */
+ 
 
  uint32_t Vcsense;
  uint32_t Vcdrive_meas;
@@ -110,30 +115,32 @@ int curve_example(void)
  char msg_clear[] = "\e[2J\e[H";
  no_os_uart_write(uart_desc, msg_clear, strlen(msg_clear));
 
- char msg_title[] = "AD5592R Loopback Example\n\r";
+ char msg_title[] = "AD5592R & AD5593R Loopback Example\n\r";
  no_os_uart_write(uart_desc, msg_title, strlen(msg_title));
 
  char msg_separator[] = "==========================================\n\r\n\r";
  no_os_uart_write(uart_desc, msg_separator, strlen(msg_separator));
 
- /* Initialize AD5592R (SPI device) */
- struct ad5592r_init_param ad5592r_ip = DEFINE_AD5592R_IP();
- ret = ad5592r_init(&ad5592r_dev, &ad5592r_ip);
+
+ /* Initialize AD5593R (I2C device) */
+ struct ad5593r_init_param ad5593r_ip = DEFINE_AD5593R_IP();
+ ret = ad5593r_init(&ad5593r_dev, &ad5593r_ip);
  if (ret) {
-  char msg_err[] = "Failed to initialize AD5592R (SPI)\n\r";
+  char msg_err[] = "Failed to initialize AD5593R (I2C)\n\r";
   no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
   goto cleanup;
  }
- char msg_init[] = "AD5592R (SPI) initialized successfully\n\r";
+ char msg_init[] = "AD5593R (I2C) initialized successfully\n\r";
  no_os_uart_write(uart_desc, msg_init, strlen(msg_init));
 
  /* Get reference voltage */
- ret = ad5592r_get_ref(ad5592r_dev, &vref_mv);
+ ret = ad5593r_get_ref(ad5593r_dev, &vref_mv);
  if (ret) {
   char msg_err[] = "Failed to get reference voltage\n\r";
   no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
   goto cleanup;
  }
+
 
 
 
@@ -146,7 +153,7 @@ int curve_example(void)
 
     dac_value = 500 / (uint16_t) scale;
 
-    ret = ad5592r_write_dac(ad5592r_dev, 0, dac_value);
+    ret = ad5593r_write_dac(ad5593r_dev, 0, dac_value);
     if (ret) {
     char msg_err[] = "Failed to write to DAC\n\r";
     no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
@@ -154,7 +161,14 @@ int curve_example(void)
     }
 
 
-    ret = ad5592r_write_dac(ad5592r_dev, 2, dac_value);
+    ret = ad5593r_write_dac(ad5593r_dev, 2, dac_value);
+    if (ret) {
+    char msg_err[] = "Failed to write to DAC\n\r";
+    no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+    goto cleanup;
+    }
+
+    ret = ad5593r_write_dac(ad5593r_dev, 3, 4095);
     if (ret) {
     char msg_err[] = "Failed to write to DAC\n\r";
     no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
@@ -168,7 +182,7 @@ int curve_example(void)
     float curve_ics[NUM_CURVES][NUM_POINTS];
     int curve_idx = 0;
     
-    for (uint16_t vb = 819; vb < 4096; vb = vb + 819){
+    for (uint16_t vb = 3277; vb < 0; vb = vb - 819){
 
         /*ITERATION OF MY CALCULATION FOR FORMULA*/
         // uint32_t vbdrive = vb / (uint32_t)scale;
@@ -176,7 +190,7 @@ int curve_example(void)
         // uint32_t vbdrive = (vb * vref_mv) / 4096;
 
         /*Write Values in the DAC*/
-        ret = ad5592r_write_dac(ad5592r_dev, 0, vbdrive);
+        ret = ad5593r_write_dac(ad5593r_dev, 0, vbdrive);
         if (ret) {
             char msg_err[] = "Failed to write to DAC\n\r";
             no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
@@ -194,7 +208,7 @@ int curve_example(void)
 
         int point_idx = 0;
 
-        for(uint16_t vcv = 0; vcv < 4096; vcv = vcv + 81){
+        for(uint16_t vcv = 4096; vcv < 4096; vcv = vcv - 81){
 
             uint32_t Vcsense_raw;
             uint32_t Vcdrive_meas_raw;
@@ -204,7 +218,7 @@ int curve_example(void)
             uint32_t vcdrive = vcv;
             // uint32_t vcdrive = (vcv * vref_mv) / 4096;
 
-            ret = ad5592r_write_dac(ad5592r_dev, 2, vcdrive);
+            ret = ad5593r_write_dac(ad5593r_dev, 2, vcdrive);
             if (ret) {
                 char msg_err[] = "Failed to write to DAC\n\r";
                 no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
@@ -212,14 +226,14 @@ int curve_example(void)
             }
 
 
-            ret = ad5592r_read_adc(ad5592r_dev, 1, &Vcsense_raw);
+            ret = ad5593r_read_adc(ad5593r_dev, 1, &Vcsense_raw);
             if (ret) {
             char msg_err[] = "Failed to read from ADC\n\r";
             no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
             goto cleanup;
             }
 
-            ret = ad5592r_read_adc(ad5592r_dev, 2, &Vcdrive_meas_raw);
+            ret = ad5593r_read_adc(ad5593r_dev, 2, &Vcdrive_meas_raw);
             if (ret) {
             char msg_err[] = "Failed to read from ADC\n\r";
             no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
@@ -356,8 +370,8 @@ int curve_example(void)
 
 
 cleanup:
- if (ad5592r_dev)
-  ad5592r_remove(ad5592r_dev);
+ if (ad5593r_dev)
+  ad5593r_remove(ad5593r_dev);
  if (uart_desc)
   no_os_uart_remove(uart_desc);
 
