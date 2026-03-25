@@ -108,13 +108,13 @@ int curve_example(void)
  }
 
  char msg_clear[] = "\e[2J\e[H";
- no_os_uart_write(uart_desc, msg_clear, sizeof(msg_clear) - 1);
+ no_os_uart_write(uart_desc, msg_clear, strlen(msg_clear));
 
  char msg_title[] = "AD5592R Loopback Example\n\r";
- no_os_uart_write(uart_desc, msg_title, sizeof(msg_title) - 1);
+ no_os_uart_write(uart_desc, msg_title, strlen(msg_title));
 
  char msg_separator[] = "==========================================\n\r\n\r";
- no_os_uart_write(uart_desc, msg_separator, sizeof(msg_separator) - 1);
+ no_os_uart_write(uart_desc, msg_separator, strlen(msg_separator));
 
  /* Initialize AD5592R (SPI device) */
  struct ad5592r_init_param ad5592r_ip = DEFINE_AD5592R_IP();
@@ -125,7 +125,7 @@ int curve_example(void)
   goto cleanup;
  }
  char msg_init[] = "AD5592R (SPI) initialized successfully\n\r";
- no_os_uart_write(uart_desc, msg_init, sizeof(msg_init) - 1);
+ no_os_uart_write(uart_desc, msg_init, strlen(msg_init));
 
  /* Get reference voltage */
  ret = ad5592r_get_ref(ad5592r_dev, &vref_mv);
@@ -254,98 +254,101 @@ int curve_example(void)
     // ======================
 
 
-    // char grid[GRAPH_HEIGHT][GRAPH_WIDTH];
-    // char ASCII_Buffer[100];
+    char grid[GRAPH_HEIGHT + 2][GRAPH_WIDTH + 2];
+    char ASCII_Buffer[100];
     
-    // int grid_h = GRAPH_HEIGHT + 2;
-    // int grid_w = GRAPH_WIDTH + 2;
     
-
-    // // LOOP FOR BORDERS
-    // for (int y = 0; y < GRAPH_HEIGHT + 2; y++){
-    //     for(int x = 0; x < GRAPH_WIDTH + 2; x++){
-    //         if (y == 0 || y == GRAPH_WIDTH + 1){
-    //             grid[y][x] = '-';
-    //         }
-    //         if (x == 0 || x == GRAPH_HEIGHT + 1){
-    //             grid[y][x] = '|';
-    //         } else {
-    //             grid[y][x] = ' ';
-    //         }
-    //     no_os_mdelay(100);
-    //     }
-    // }
-
-    // // CORNERS
-    // grid[0][0] = '+';
-    // grid[0][GRAPH_WIDTH + 1] = '+';
-    // grid[GRAPH_HEIGHT + 1][0] = '+';
-    // grid[grid_h][grid_w] = '+';
-
-    // float max_v = 0.0f;
-    // float max_i = 0.0f;
-
-    // // STORE MAX VOLTAGES AND CURRENT
-    // for(int c = 0; c < NUM_CURVES; c++){
-    //     for(int p = 0; p < NUM_POINTS; p++){
-    //         if (curve_vcs[c][p] > max_v){
-    //             max_v = curve_vcs[c][p];
-    //         }
-    //         if (curve_ics[c][p] > max_i){
-    //             max_i = curve_ics[c][p];
-    //         }
-    //     }
-    // }
-    
-    // // CHECK VALUE IF POSITIVE
-    // if(max_v < 0.1f){
-    //     max_v = 1.0f;
-    // }
-    // if(max_i < 0.1f){
-    //     max_i = 1.0f;
-    // }
-
-    // for(int c = 0; c < NUM_CURVES; c++){
-    //     for(int p = 0; p < NUM_POINTS; p++){
-    //         float v = curve_vcs[c][p];
-    //         float i = curve_ics[c][p];
-
-    //         int x = 1 + (int)((v / max_v) * (GRAPH_WIDTH - 1));
-    //         int y = 1 + (int)((i / max_i) * (GRAPH_HEIGHT - 1));
-    //         int invert_y = GRAPH_HEIGHT - y;
-
-    //         if ((x >= 1 && x <= GRAPH_WIDTH) && (y >= 1 && y <= GRAPH_HEIGHT)){
-    //             grid[y][x] = '*';
-    //         }
-    //     }
-    // }
-
-    // no_os_mdelay(100);
-    // sprintf(ASCII_Buffer, "\r\n == ASCII Curve Tracer ==\r\n");
-    // no_os_uart_write(uart_desc, ASCII_Buffer, strlen(ASCII_Buffer));
     
 
-    // // Print GRID
-    // for(int y = 0; y < GRAPH_WIDTH; y++){
-    //     no_os_mdelay(100);
-    //     no_os_uart_write(uart_desc, (uint8_t*)grid[y], GRAPH_WIDTH + 2);
-    //     no_os_uart_write(uart_desc, (uint8_t*)"\r\n", 2);
-    // }
+    // LOOP FOR BORDERS
+    no_os_mdelay(10);
+    for (int y = 0; y < GRAPH_HEIGHT + 2; y++){
+        for(int x = 0; x < GRAPH_WIDTH + 2; x++){
+            if (y == 0 || y == GRAPH_HEIGHT + 1){
+                grid[y][x] = '-';
+            }
+            if (x == 0 || x == GRAPH_WIDTH + 1){
+                grid[y][x] = '|';
+            } else {
+                grid[y][x] = ' ';
+            }
+        no_os_mdelay(10);
+        }
+    }
 
-    // no_os_mdelay(100);
-    // sprintf(ASCII_Buffer, " 0.0");
-    // no_os_uart_write(uart_desc, (uint8_t*)ASCII_Buffer, strlen(ASCII_Buffer));
+    // CORNERS
+    grid[0][0] = '+';
+    grid[0][GRAPH_WIDTH + 1] = '+';
+    grid[GRAPH_HEIGHT + 1][0] = '+';
+    grid[GRAPH_HEIGHT + 1][GRAPH_WIDTH + 1] = '+';
 
-    // float step = max_v / 5.0f;
-    // for(int k = 1; k <= 5; k++){
-    //     no_os_mdelay(100);
-    //     no_os_uart_write(uart_desc, (uint8_t*)"            ", 9);
-    //     sprintf(ASCII_Buffer, "%.1f", step * k);
-    //     no_os_uart_write(uart_desc, (uint8_t*)ASCII_Buffer, strlen(ASCII_Buffer));
+    float max_v = 0.0f;
+    float max_i = 0.0f;
 
-    // }
-    // no_os_mdelay(100);
-    // no_os_uart_write(uart_desc, (uint8_t*)"\r\n", 2);
+    no_os_mdelay(10);
+    // STORE MAX VOLTAGES AND CURRENT
+    for(int c = 0; c < NUM_CURVES; c++){
+        for(int p = 0; p < NUM_POINTS; p++){
+            if (curve_vcs[c][p] > max_v){
+                max_v = curve_vcs[c][p];
+            }
+            if (curve_ics[c][p] > max_i){
+                max_i = curve_ics[c][p];
+            }
+
+        }
+        no_os_mdelay(10);
+    }
+    
+    // CHECK VALUE IF POSITIVE
+    if(max_v < 0.1f){
+        max_v = 1.0f;
+    }
+    if(max_i < 0.1f){
+        max_i = 1.0f;
+    }
+
+    for(int c = 0; c < NUM_CURVES; c++){
+        for(int p = 0; p < NUM_POINTS; p++){
+            float v = curve_vcs[c][p];
+            float i = curve_ics[c][p];
+
+            int x = 1 + (int)((v / max_v) * (GRAPH_WIDTH - 1));
+            int y = 1 + (int)((i / max_i) * (GRAPH_HEIGHT - 1));
+            int invert_y = GRAPH_HEIGHT - y;
+
+            if (x >= 1 && x <= GRAPH_WIDTH && invert_y >= 1 && invert_y <= GRAPH_HEIGHT){
+                grid[invert_y][x] = '*';
+            }
+        }
+    }
+
+    no_os_mdelay(100);
+    sprintf(ASCII_Buffer, "\r\n == ASCII Curve Tracer ==\r\n");
+    no_os_uart_write(uart_desc, ASCII_Buffer, strlen(ASCII_Buffer));
+    
+
+    // Print GRID
+    for(int y = 0; y < GRAPH_HEIGHT + 2; y++){
+        no_os_mdelay(100);
+        no_os_uart_write(uart_desc, (uint8_t*)grid[y], GRAPH_WIDTH + 2);
+        no_os_uart_write(uart_desc, "\r\n", 2);
+    }
+
+    no_os_mdelay(100);
+    sprintf(ASCII_Buffer, " 0.0");
+    no_os_uart_write(uart_desc, (uint8_t*)ASCII_Buffer, strlen(ASCII_Buffer));
+
+    float step = max_v / 5.0f;
+    for(int k = 1; k <= 5; k++){
+        no_os_mdelay(100);
+        no_os_uart_write(uart_desc,"        ", 9);
+        sprintf(ASCII_Buffer, "%.1f", step * k);
+        no_os_uart_write(uart_desc, (uint8_t*)ASCII_Buffer, strlen(ASCII_Buffer));
+
+    }
+    no_os_mdelay(100);
+    no_os_uart_write(uart_desc, (uint8_t*)"\r\n", 2);
     
 
  no_os_mdelay(1000);
