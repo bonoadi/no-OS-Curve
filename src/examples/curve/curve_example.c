@@ -37,6 +37,7 @@
 #include "no_os_uart.h"
 #include "ad5592r.h"
 #include "ad5593r.h"
+#include "lm75.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -787,6 +788,53 @@ cleanup:
  return ret;
 }
 
+int lm75_example(struct no_os_uart_desc *uart_desc)
+{
+    struct lm75_dev *lm75 = NULL;
+    struct lm75_init_param lm75_ip = {
+	.fault_count = 0, /* POR state */
+	.os_polarity = lm75_os_active_low,
+	.i2c_ip = &lm75_i2c_ip,
+	};
+    int ret;
+    uint32_t temp_raw;
+    uint32_t temp;
+
+
+    ret = lm75_init(&lm75, &lm75_ip);
+	if (ret){
+    char msg_err[] = "Failed to initialize AD5592R (SPI)\n\r";
+        no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+        goto cleanup;
+    }
+
+    no_os_mdelay(1000);
+    for(int m = 0; m < 100; m++){
+
+		ret = lm75_read_temperature(lm75, lm75_die_temperature, &temp_raw);
+		if (ret){
+		char msg_err[] = "Failed to read lm75\n\r";
+            no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+            goto cleanup;
+        }
+        temp = lm75_raw_to_millicelsius(temp_raw); // <- for conversion
+        char temp_msg[64];
+        sprintf(temp_msg, "LM75 Temperature: %d.%d°C (raw=%u)\n\r", temp / 1000, temp % 1000, temp_raw);
+        no_os_uart_write(uart_desc, temp_msg, strlen(temp_msg));
+        no_os_mdelay(100);
+    }
+    char csv_footer[] = "=== LM75 TEST END ===\n\r\n\r";
+    no_os_uart_write(uart_desc, csv_footer, sizeof(csv_footer) - 1);
+
+    no_os_mdelay(1000);
+
+cleanup:
+    if (lm75)
+    lm75_remove(lm75);
+    
+    return ret;
+}
+
 int curve_example(void)
 {
  struct no_os_uart_desc *uart_desc = NULL;
@@ -825,6 +873,17 @@ int curve_example(void)
  ret = ad5593r_curve_example(uart_desc);
  if (ret) {
  char msg_err[] = "\n\rAD5593R curve tracer failed!\n\r";
+ no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
+ goto cleanup;
+ }
+
+  /* Add delay between tests */
+ no_os_mdelay(2000);
+
+ /* Run AD5593R curve tracer (I2C) */
+ ret = lm75_example(uart_desc);
+ if (ret) {
+ char msg_err[] = "\n\rLM75 failed!\n\r";
  no_os_uart_write(uart_desc, msg_err, sizeof(msg_err) - 1);
  goto cleanup;
  }
