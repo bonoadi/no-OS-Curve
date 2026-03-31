@@ -1,4 +1,4 @@
--DNO_OS_VERSION=COMPLETE-93622f3-modified
+-DNO_OS_VERSION=COMPLETE-dbfc684-modified
 -DNO_OS_PROJECT=adalm-lsmspg
 -DNO_OS_USB_UART
 -mthumb
