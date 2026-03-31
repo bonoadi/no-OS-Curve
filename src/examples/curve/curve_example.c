@@ -358,7 +358,7 @@ int ad5592r_curve_example(struct no_os_uart_desc *uart_desc)
    int y = 1 + (int)((i / max_i) * (GRAPH_HEIGHT - 1));
 
    /* Invert y-axis (0 at bottom) */
-   y = GRAPH_HEIGHT - y;
+   y = GRAPH_HEIGHT - y; 
 
    if (x >= 1 && x <= GRAPH_WIDTH && y >= 1 && y <= GRAPH_HEIGHT) {
     grid[y][x] = '*';
@@ -398,29 +398,33 @@ int ad5592r_curve_example(struct no_os_uart_desc *uart_desc)
  char msg_complete[] = "===== AD5592R Curve Trace Complete =====\n\r\n\r";
  no_os_uart_write(uart_desc, (const uint8_t *)msg_complete, sizeof(msg_complete) - 1);
 
- /* Output CSV data for Excel */
+
+
+ /*====================================
+   CSV Data  printout for Spreadsheet
+  =====================================*/
+
  char csv_header[] = "\n\r=== CSV DATA START: AD5592R_NPN ===\n\r";
  no_os_uart_write(uart_desc, csv_header, sizeof(csv_header) - 1);
 
- char csv_col_header[] = "Curve,Ib_uA,Vc_V,Ic_mA\n\r";
+ char csv_col_header[] = "Vce1,Ic1,Vce2,Ic2,Vce3,Ic3,Vce4,Ic4,Vce5,Ic5\n\r";
  no_os_uart_write(uart_desc, csv_col_header, sizeof(csv_col_header) - 1);
 
  /* Output all curve data in CSV format */
- for (int c = 0; c < NUM_CURVES; c++) {
-  /* Calculate Ib for this curve */
-  uint16_t vb_mv = 499 + (c * 500);
-  float vb_voltage = (((uint16_t)(vb_mv / mV_per_lsb)) * mV_per_lsb) / 1000.0f;
-  float ib_ua = ((vb_voltage - Vbe) / Rbase) * 1e6;
+ char csv_line[128];
+ for (int p = 0; p < NUM_POINTS; p++) {
+    for (int c = 0; c < NUM_CURVES; c++) {
+    float vc = curve_vcs[c][p];
+    float ic = curve_ics[c][p];  
+    sprintf(csv_line, "%.4f,%.4f\n\r", vc, ic);
+    no_os_uart_write(uart_desc, csv_line, strlen(csv_line));
+        if (c < NUM_CURVES - 1){
+            no_os_uart_write(uart_desc, (uint8_t*)",",1);
+            }
+        }
+        no_os_uart_write(uart_desc,(uint8_t *)" \r\n",2);
 
-  for (int p = 0; p < NUM_POINTS; p++) {
-   char csv_line[128];
-   float vc_v = curve_vcs[c][p];
-   float ic_ma = curve_ics[c][p];  // Already in mA
-   sprintf(csv_line, "%d,%.4f,%.4f,%.4f\n\r", c + 1, ib_ua, vc_v, ic_ma);
-   no_os_uart_write(uart_desc, csv_line, strlen(csv_line));
-  }
- }
-
+    }
  char csv_footer[] = "=== CSV DATA END ===\n\r\n\r";
  no_os_uart_write(uart_desc, csv_footer, sizeof(csv_footer) - 1);
 
@@ -745,6 +749,8 @@ int ad5593r_curve_example(struct no_os_uart_desc *uart_desc)
 
  char msg_complete[] = "===== AD5593R Curve Trace Complete =====\n\r\n\r";
  no_os_uart_write(uart_desc, msg_complete, sizeof(msg_complete) - 1);
+
+
 
  /* Output CSV data for Excel */
  char csv_header[] = "\n\r=== CSV DATA START: AD5593R_PNP ===\n\r";
